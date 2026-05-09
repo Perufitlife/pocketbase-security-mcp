@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.Perufitlife/pocketbase-security-mcp",
+  "description": "Audit and fix PocketBase API rules from inside any MCP-compatible AI agent. Detects empty rules, over-permissive @request.auth.id != \"\" grants, dangerous true literals. Active anonymous probe confirms each leak live.",
+  "repository": {
+    "url": "https://github.com/Perufitlife/pocketbase-security-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "websiteUrl": "https://github.com/Perufitlife/pocketbase-security-mcp",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@perufitlife/pocketbase-security-mcp",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        { "name": "POCKETBASE_URL", "description": "Base URL of your PocketBase instance", "isRequired": true, "isSecret": false },
+        { "name": "POCKETBASE_ADMIN_EMAIL", "description": "PocketBase admin/superuser email", "isRequired": true, "isSecret": false },
+        { "name": "POCKETBASE_ADMIN_PASSWORD", "description": "PocketBase admin password (used only for the audit run, never persisted)", "isRequired": true, "isSecret": true }
+      ]
+    }
+  ]
+}
