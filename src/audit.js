@@ -118,10 +118,21 @@ const RULE_FIELDS = [
 ];
 
 function classifyRule(ruleStr) {
-  if (ruleStr === null || ruleStr === undefined || ruleStr === "") {
+  // null / undefined = operation DISABLED in PocketBase (superusers only).
+  // This is SAFE — no public or authenticated user access. Do NOT flag.
+  // See https://pocketbase.io/docs/api-rules-and-filters/#api-rules
+  if (ruleStr === null || ruleStr === undefined) {
+    return "ok";
+  }
+  // "" (empty string) = operation FULLY PUBLIC — anyone, anonymous included.
+  if (ruleStr === "") {
     return "empty_public";
   }
   const trimmed = String(ruleStr).trim();
+  // Whitespace-only resolves to a public rule in practice.
+  if (trimmed === "") {
+    return "empty_public";
+  }
   if (trimmed === "true" || trimmed === "1=1" || trimmed.endsWith("|| true") || trimmed.startsWith("true ||")) {
     return "dangerous_literal";
   }
@@ -147,6 +158,11 @@ export async function audit(opts) {
     if (col.system) continue; // skip _superusers, _otps, etc
 
     for (const { name: ruleField, action } of RULE_FIELDS) {
+      // View collections are read-only: create/update/delete rules can never be
+      // exercised through the API, so a permissive value there is inert (no FP).
+      // See https://pocketbase.io/docs/collections/#view-collection
+      if (col.type === "view" && (action === "create" || action === "update" || action === "delete")) continue;
+
       const ruleVal = col[ruleField];
       const verdict = classifyRule(ruleVal);
       if (verdict === "ok") continue;
@@ -187,8 +203,9 @@ export async function audit(opts) {
     // Auth collection-specific checks
     if (col.type === "auth") {
       if (col.options?.allowEmailAuth && !col.options?.requireEmail && col.createRule !== null) {
-        // Open signup + lax create
-        if (col.createRule === "" || col.createRule === null) {
+        // Open signup + lax create. createRule === null means signup is disabled
+        // (superusers only) — safe. Only an empty-string rule is publicly creatable.
+        if (col.createRule === "") {
           findings.push({
             check: "collection_admin_auth_with_open_signup",
             ...CHECKS.collection_admin_auth_with_open_signup,
